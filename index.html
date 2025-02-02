@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API testing</title>
+    <link rel="stylesheet" href="./styles/output.css">
+    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+    <style>
+
+
+        table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+        padding: .5rem;
+        text-align: center;
+        }
+
+        thead {
+            font-weight: bold;
+        }
+    </style>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+</head>
+<body class="p-12 grid grid-cols-1 md:grid-cols-[320px_1fr] grid-rows-1 h-full gap-5">
+    <div class="place-items-center flex flex-col gap-5 bg-indigo-100 p-12">
+        <h1>ADD NEW USER </h1>
+
+        <form class="flex flex-col gap-5" id="user-form">
+            <label for="username">
+                <input class="border-gray-400 border p-1.5 focus:outline-0 focus-within:decoration-0" type="text" placeholder="username" id="username" name="username">
+            </label>
+            <label for="email">
+                <input class="border-gray-400 border p-1.5 focus:outline-0 focus-within:decoration-0" type="email" placeholder="email" id="username" name="email">
+            </label>
+            <label for="gender">
+                <p>Gender:</p>
+                <span>M</span>
+                <input type="radio" placeholder="username" value="M" name="gender" class="mr-1.5 cursor-pointer">
+                <span>F</span>
+                <input type="radio" placeholder="username" value="F" name="gender" class="cursor-pointer">
+            </label>
+
+            <label for="dob">
+                <p>Date of Birth:</p>
+                <input class="border-gray-400 border p-1.5 focus:outline-0 focus-within:decoration-0" type="text" name="dob" id="dob" placeholder="mm dd, yyyy">
+            </label>
+
+            <button class="self-center cursor-pointer w-fit bg-indigo-300 p-1.5" type="submit" value="submit">Submit</button>
+        </form>
+    </div>
+
+    <section class="md:p-12 w-full h-full flex flex-col md:items-center md:justify-center gap-5">
+        <button id="btn" class="self-center cursor-pointer w-fit bg-indigo-300 p-1.5">Show Users</button>
+
+        <div class="overflow-x-auto">
+            <table class="table-auto w-full sm:w-auto">
+                <thead>
+                    <tr>
+                        <td>Username</td>
+                        <td>Email</td>
+                        <td>Gender</td>
+                        <td>Reg Date</td>
+                    </tr>
+                </thead>
+                <tbody id="tbody">
+                    <tr>
+                        <td>Rowland</td>
+                        <td>momohrowand@gmail.com</td>
+                        <td>M</td>
+                        <td>2025-02-02</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+    </section>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        flatpickr("#dob", {
+        dateFormat: "Y-m-d",  // YYYY-MM-DD format
+        altInput: true,       // Show a formatted version
+        altFormat: "F j, Y",  // Example: January 1, 2000
+        minDate: "1900-01-01",
+        maxDate: new Date().getFullYear() - 13 + "-12-31", // Ensure user is at least 13 years old
+        disableMobile: true  // Use Flatpickr on mobile instead of native picker
+    });
+});
+
+        const form = document.getElementById('user-form')
+        const btn = document.getElementById('btn')
+        const tbody = document.getElementById('tbody')
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            try 
+            {
+                const res = await fetch('http://localhost/api/users.php', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+
+                })
+
+                const result = await res.json()
+                console.log(result);
+            }
+            catch(err) { console.log(err) }
+            
+        }
+
+        async function handleGet() {
+
+            const formatDate = (date) => {
+                const [yy, mm, dd] = date.split(" ")[0].split("-");
+                return `${dd}-${mm}-${yy}`;
+            }
+            try 
+            {
+                const res = await fetch('http://localhost/api/users.php')
+
+                const result = await res.json()
+                const trFrag = document.createDocumentFragment()
+                
+                
+                result.forEach(entry => {
+                
+                    const tr = document.createElement('tr')
+                    const td1 = document.createElement('td')
+                    const td2 = document.createElement('td')
+                    const td3 = document.createElement('td')
+                    const td4 = document.createElement('td')
+                    td1.textContent = entry.username
+                    td2.textContent = entry.email
+                    td3.textContent = entry.gender
+                    td4.textContent = formatDate(entry['reg_date']);
+                    tr.appendChild(td1)
+                    tr.appendChild(td2)
+                    tr.appendChild(td3)
+                    tr.appendChild(td4)
+
+                    trFrag.append(tr);
+                    
+                })
+
+                tbody.innerHTML = ''
+                tbody.appendChild(trFrag)
+
+
+        
+
+            }
+            catch(err) { console.log(err) }
+        }
+
+        form.addEventListener('submit', handleSubmit)
+        btn.addEventListener('click', handleGet)
+
+    </script>
+    
+</body>
+</html>
