@@ -33,7 +33,7 @@
                 <input class="border-gray-400 border p-1.5 focus:outline-0 focus-within:decoration-0" type="text" placeholder="username" id="username" name="username">
             </label>
             <label for="email">
-                <input class="border-gray-400 border p-1.5 focus:outline-0 focus-within:decoration-0" type="email" placeholder="email" id="username" name="email">
+                <input class="border-gray-400 border p-1.5 focus:outline-0 focus-within:decoration-0" type="email" placeholder="email" id="email" name="email">
             </label>
             <label for="gender">
                 <p>Gender:</p>
@@ -49,6 +49,8 @@
             </label>
 
             <button class="self-center cursor-pointer w-fit bg-indigo-300 p-1.5" type="submit" value="submit">Submit</button>
+
+            <p id="status" class="hidden text-center text-green-400 font-bold">User added</p>
         </form>
     </div>
 
@@ -56,7 +58,7 @@
         <button id="btn" class="self-center cursor-pointer w-fit bg-indigo-300 p-1.5">Show Users</button>
 
         <div class="overflow-x-auto">
-            <table class="table-auto w-full sm:w-auto">
+            <table  id="table" class="hidden table-auto w-full sm:w-auto ">
                 <thead>
                     <tr>
                         <td>Username</td>
@@ -66,34 +68,22 @@
                     </tr>
                 </thead>
                 <tbody id="tbody">
-                    <tr>
-                        <td>Rowland</td>
-                        <td>momohrowand@gmail.com</td>
-                        <td>M</td>
-                        <td>2025-02-02</td>
-                    </tr>
+                    <!-- Fetched data goes here -->
                 </tbody>
             </table>
-
         </div>
 
     </section>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-        flatpickr("#dob", {
-        dateFormat: "Y-m-d",  // YYYY-MM-DD format
-        altInput: true,       // Show a formatted version
-        altFormat: "F j, Y",  // Example: January 1, 2000
-        minDate: "1900-01-01",
-        maxDate: new Date().getFullYear() - 13 + "-12-31", // Ensure user is at least 13 years old
-        disableMobile: true  // Use Flatpickr on mobile instead of native picker
-    });
-});
+        
 
         const form = document.getElementById('user-form')
         const btn = document.getElementById('btn')
         const tbody = document.getElementById('tbody')
+        const table = document.getElementById('table')
+        const status = document.getElementById('status')
+
         async function handleSubmit(e) {
             e.preventDefault();
 
@@ -108,59 +98,116 @@
 
                 })
 
-                const result = await res.json()
-                console.log(result);
+                status.classList.remove('hidden');
+                setTimeout(()=>{
+                    status.classList.add('hidden')
+                    e.target.reset();
+                }, 3000)
+
+                
             }
             catch(err) { console.log(err) }
             
         }
 
-        async function handleGet() {
+        async function handleDelete(id) {
+            if (confirm('Are you sure?'))
+            {
+                try 
+                {
+                   
+                    const res = await fetch(`http://localhost/api/users.php?id=${id}`, {
+                        method: 'DELETE'
+                    })
+    
+                    const result = await res.json();
+                    console.log(result);
+                    alert('User deleted successfully.');
+                    btn.click();
+                }
+                catch(err) { console.log(err) }
+                
+            }
+            else { return false}
+        }
+
+        async function handleGet(e) {
 
             const formatDate = (date) => {
                 const [yy, mm, dd] = date.split(" ")[0].split("-");
-                return `${dd}-${mm}-${yy}`;
+                return `${dd}/${mm}/${yy}`;
             }
-            try 
+
+            if(table.classList.contains('hidden'))
             {
-                const res = await fetch('http://localhost/api/users.php')
+                e.target.textContent = 'Show Users'
+                try 
+                {
+                    const res = await fetch('http://localhost/api/users.php')
+                    if(!res.ok) 
+                    { 
+                        console.log('Error fetching data')
+                        return false;
+                    }
 
-                const result = await res.json()
-                const trFrag = document.createDocumentFragment()
-                
-                
-                result.forEach(entry => {
-                
-                    const tr = document.createElement('tr')
-                    const td1 = document.createElement('td')
-                    const td2 = document.createElement('td')
-                    const td3 = document.createElement('td')
-                    const td4 = document.createElement('td')
-                    td1.textContent = entry.username
-                    td2.textContent = entry.email
-                    td3.textContent = entry.gender
-                    td4.textContent = formatDate(entry['reg_date']);
-                    tr.appendChild(td1)
-                    tr.appendChild(td2)
-                    tr.appendChild(td3)
-                    tr.appendChild(td4)
-
-                    trFrag.append(tr);
+                    const result = await res.json()
+                    table.classList.remove('hidden')
+                    const trFrag = document.createDocumentFragment()
                     
-                })
+                    
+                    result.forEach(entry => {
+                    
+                        const tr = document.createElement('tr')
+                        const td1 = document.createElement('td')
+                        const td2 = document.createElement('td')
+                        const td3 = document.createElement('td')
+                        const td4 = document.createElement('td')
+                        const td5 = document.createElement('td')
+                        td1.textContent = entry.username
+                        td2.textContent = entry.email
+                        td3.textContent = entry.gender
+                        td4.textContent = formatDate(entry['reg_date']);
+                        td5.innerHTML = `<img class='cursor-pointer' src='./delete.svg' width='20px' onclick='handleDelete(${entry.id})' />`
+                        tr.appendChild(td1)
+                        tr.appendChild(td2)
+                        tr.appendChild(td3)
+                        tr.appendChild(td4)
+                        tr.appendChild(td5)
 
-                tbody.innerHTML = ''
-                tbody.appendChild(trFrag)
+                        trFrag.append(tr);
+                        
+                    })
 
+                    tbody.innerHTML = ''
+                    tbody.appendChild(trFrag)
+                    e.target.textContent = 'Collapse'
 
-        
+                }
+                catch(err) { console.log(err) }
+            }
+            else 
+            { 
+                e.target.textContent = "Show users"
+                table.classList.add('hidden') 
 
             }
-            catch(err) { console.log(err) }
         }
+            
+
+    
 
         form.addEventListener('submit', handleSubmit)
         btn.addEventListener('click', handleGet)
+
+        document.addEventListener("DOMContentLoaded", function () {
+        flatpickr("#dob", {
+        dateFormat: "Y-m-d", 
+        altInput: true,       
+        altFormat: "F j, Y",  
+        minDate: "1900-01-01",
+        maxDate: new Date().getFullYear() - 13 + "-12-31"
+    });
+});
 
     </script>
     
